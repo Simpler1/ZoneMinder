@@ -142,6 +142,7 @@ sub Sql {
     }
 
     my $filter_expr = ZoneMinder::General::jsonDecode($self->{Query_json});
+    my $prefix = '';
     my $fields = 'E.*, unix_timestamp(E.StartDateTime) AS Time';
     my $from = 'Events AS E';
 
@@ -164,9 +165,41 @@ sub Sql {
         if ( $term->{attr} eq 'AlarmedZoneId' ) {
           $term->{op} = 'EXISTS';
         } elsif ( $term->{attr} eq 'Tags' ) {
-          $fields .= ', (SELECT Name FROM Tags WHERE Id IN (SELECT TagId FROM Events_Tags WHERE Events_Tags.EventId=E.Id)) As Tags';
-          $self->{Sql} .= 'T.Id';
-          $from .= ' LEFT JOIN Events_Tags AS ET ON E.Id = ET.EventId LEFT JOIN Tags AS T ON T.Id = ET.TagId';
+          if ($term->{op} eq '=' or $term->{op} eq '!=') {
+            $fields .= ', (SELECT Name FROM Tags WHERE Id IN (SELECT TagId FROM Events_Tags WHERE Events_Tags.EventId=E.Id)) As Tags';
+            $self->{Sql} .= 'T.Id';
+            $from .= ' LEFT JOIN Events_Tags AS ET ON E.Id = ET.EventId LEFT JOIN Tags AS T ON T.Id = ET.TagId';
+          } else {  # Term is 'only'
+            $self->{Sql} .= 'T.Id';
+            $prefix .= '
+              WITH ES 
+                AS (
+                  SELECT ET.EventId
+                  FROM Events_Tags 
+                    AS ET 
+                  WHERE ET.TagId = T.Id
+                )
+            ';
+            $fields .= '
+              GROUP_CONCAT(
+                T.Name
+                SEPARATOR ", "
+              ) 
+                AS Tags
+            ';
+            $from .= '
+              LEFT JOIN Events_Tags
+                AS ET 
+                ON E.Id = ET.EventId 
+              LEFT JOIN ES 
+                ON E.Id = ES.EventId
+              LEFT JOIN Tags 
+                AS T 
+                ON ET.TagId = T.Id
+              GROUP BY ET.EventId 
+              HAVING Tags not like '%,%'
+            ';
+          }
         } elsif ( $term->{attr} =~ /^Monitor/ ) {
           if (!($fields =~ /MonitorName/)) {
             $fields .= ', M.Name as MonitorName';
@@ -313,6 +346,9 @@ sub Sql {
             } elsif ( $term->{op} eq '!~' ) {
               $self->{Sql} .= ' NOT REGEXP '.$value;
             } elsif ( $term->{op} eq 'IS' ) {
+              if ( $term->{attr} eq 'Tags' ) {
+                $self->{Sql} .= ' = ';
+              }
               if ( $value eq 'Odd' ) {
                 $self->{Sql} .= ' % 2 = 1';
               } elsif ( $value eq 'Even' ) {
@@ -342,7 +378,7 @@ sub Sql {
       } # end foreach term
     } # end if terms
 
-    my $sql = ' SELECT '.$fields. ' FROM ' . $from;
+    my $sql = $prefix.' SELECT '.$fields. ' FROM ' . $from;
     if ( $self->{Sql} ) {
 # Include all events, including events that are still ongoing
 # and have no EndTime yet

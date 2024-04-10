@@ -861,8 +861,9 @@ class Filter extends ZM_Object {
   public static function tags_opTypes() {
     if (!self::$tags_opTypes) {
       self::$tags_opTypes = array(
-        'LIKE' => translate('OpLike'),
-        'NOT LIKE' => translate('OpNotLike'),
+        '=[]' => translate('OpIn'),
+        '![]' => translate('OpNotIn'),
+        'IS' => translate('OpIs'),
       );
     }
     return self::$tags_opTypes;
