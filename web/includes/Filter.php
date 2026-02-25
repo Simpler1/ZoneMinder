@@ -980,7 +980,8 @@ class Filter extends ZM_Object {
       }
     }
     $availableTags = array('0'=>translate('No Tag'), '-1'=>translate('Any Tag'));
-    foreach ( dbFetchAll('SELECT Id, Name FROM Tags ORDER BY lower(`Name`) ASC') AS $tag ) {
+    // foreach ( dbFetchAll('SELECT Id, Name FROM Tags ORDER BY lower(`Name`) ASC') AS $tag ) {
+    foreach ( dbFetchAll('SELECT Id, Name FROM Tags ORDER BY LastAssignedDate DESC') AS $tag ) {
       $availableTags[$tag['Id']] = validHtmlStr($tag['Name']);
     }
 
@@ -1009,6 +1010,7 @@ class Filter extends ZM_Object {
         } else if ( $term['attr'] == 'Tags') {
           // Error($term['attr']);
           $html .= '<td>'.htmlSelect("filter[Query][terms][$i][op]", $opTypes, $term['op'], ['class'=>'chosen chosen-full-width']).'</td>'.PHP_EOL;
+          // $options = ['class'=>'chosen chosen-full-width'];
           $options = ['class'=>'chosen chosen-full-width', 'multiple'=>'multiple'];
           $selected = isset($term['val']) ? json_decode($term['val']) : [];
           $html .= '<td>'.htmlSelect("filter[Query][terms][$i][val]", $availableTags, $selected, $options).'</td>'.PHP_EOL;
@@ -1113,7 +1115,8 @@ class Filter extends ZM_Object {
       $weekdays[$i] = date('D', mktime(12, 0, 0, 1, $i+1, 2001));
     }
     $availableTags = array('0'=>translate('No Tag'), '-1'=>translate('Any Tag'));
-    foreach ( dbFetchAll('SELECT Id, Name FROM Tags ORDER BY lower(`Name`) ASC') AS $tag ) {
+    // foreach ( dbFetchAll('SELECT Id, Name FROM Tags ORDER BY lower(`Name`) ASC') AS $tag ) {
+    foreach ( dbFetchAll('SELECT Id, Name FROM Tags ORDER BY LastAssignedDate DESC') AS $tag ) {
       $availableTags[$tag['Id']] = validHtmlStr($tag['Name']);
     }
 
