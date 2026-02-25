@@ -538,6 +538,19 @@ body.sticky #page {
   }
 }
 
+@media screen and (max-width:500px) {
+  .eventStats,
+  #exportBtn,
+  #downloadBtn,
+  #unarchiveBtn,
+  #videoBtn,
+  #statsBtn,
+  #montageReviewBtn,
+  #fullscreenBtn,
+  #zoomOutBtn {
+    display: none;
+  }
+}
 
 #header h2 {
     left: 0;
